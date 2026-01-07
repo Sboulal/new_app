@@ -615,6 +615,8 @@
         const PRINT_COUNTER_KEY = 'print_counter';
         const EXPORTED_BADGES_KEY = 'exported_badges';
         const PRESENT_BADGES_KEY = 'present_badges';
+        let allBadgesCache = [];
+
 
         // Local Storage functions
         function getLocalBadges() {
@@ -673,8 +675,12 @@
             updateTabCounters();
 
             // Search functionality
-            document.getElementById('searchInput').addEventListener('input', debounce(loadBadges, 500));
-            document.getElementById('filterValide').addEventListener('change', loadBadges);
+            document.getElementById('searchInput')
+  .addEventListener('input', debounce(applySearchFilter, 300));
+
+document.getElementById('filterValide')
+  .addEventListener('change', applySearchFilter);
+
         });
 
         function switchTab(source) {
@@ -779,7 +785,9 @@
                     badges = await response.json();
                 }
                 
+                allBadgesCache = badges;
                 displayBadges(badges);
+
             } catch (error) {
                 showMessage('Erreur: ' + error.message, 'error');
                 document.getElementById('emptyState').style.display = 'block';
@@ -788,6 +796,31 @@
                 showLoading(false);
             }
         }
+        function applySearchFilter() {
+    const search = document
+        .getElementById('searchInput')
+        .value
+        .toLowerCase()
+        .trim();
+
+    const valide = document.getElementById('filterValide').value;
+
+    let filtered = [...allBadgesCache];
+
+    if (search) {
+        filtered = filtered.filter(b =>
+            b.nom.toLowerCase().includes(search) ||
+            b.prenom.toLowerCase().includes(search) ||
+            `${b.nom} ${b.prenom}`.toLowerCase().includes(search)
+        );
+    }
+
+    if (valide !== '') {
+        filtered = filtered.filter(b => parseInt(b.valide) === parseInt(valide));
+    }
+
+    displayBadges(filtered);
+}
 
         function loadStats() {
             const localBadges = getLocalBadges();
@@ -1248,25 +1281,66 @@
 
         async function exportExcel() {
             try {
-                const newBadges = getNewBadges();
+                let badgesToExport = [];
+                let sheetName = '';
+                let fileNamePrefix = '';
                 
-                if (newBadges.length === 0) {
-                    showMessage('⚠️ Aucun nouveau badge à exporter. Tous les badges ont déjà été exportés.', 'error');
+                // Export based on current tab
+                if (currentSource === 'local') {
+                    badgesToExport = getLocalBadges();
+                    sheetName = 'Badges Locaux';
+                    fileNamePrefix = 'badges_locaux';
+                } else if (currentSource === 'external') {
+                    const response = await fetch(`${API_URL}/api/getbadges?source=external`);
+                    if (!response.ok) throw new Error('Impossible de récupérer les badges externes');
+                    badgesToExport = await response.json();
+                    sheetName = 'Badges Externes QR';
+                    fileNamePrefix = 'badges_externes_qr';
+                } else if (currentSource === 'external_principaux') {
+                    const response = await fetch(`${API_URL}/api/getbadges?source=external_principaux`);
+                    if (!response.ok) throw new Error('Impossible de récupérer les badges externes principaux');
+                    badgesToExport = await response.json();
+                    sheetName = 'Badges Externes Principaux';
+                    fileNamePrefix = 'badges_externes_principaux';
+                    
+                    // Add presence status for external_principaux
+                    const presentBadges = getPresentBadges();
+                    badgesToExport = badgesToExport.map(badge => ({
+                        ...badge,
+                        presence: presentBadges.includes(badge.id) ? 'Présent' : 'Absent'
+                    }));
+                }
+                
+                if (badgesToExport.length === 0) {
+                    showMessage('⚠️ Aucun badge à exporter dans cet onglet.', 'error');
                     return;
                 }
 
-                showMessage(`Export de ${newBadges.length} nouveau(x) badge(s)...`, 'success');
+                showMessage(`Export de ${badgesToExport.length} badge(s)...`, 'success');
                 
                 const wb = XLSX.utils.book_new();
                 
-                const exportData = newBadges.map(badge => ({
-                    'ID': badge.id,
-                    'Nom': badge.nom,
-                    'Prénom': badge.prenom,
-                    'Statut': badge.valide ? 'Validé' : 'Non validé',
-                    'Source': badge.source === 'local' ? 'Local' : 'Externe',
-                    'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'
-                }));
+                // Prepare export data based on source
+                let exportData;
+                if (currentSource === 'external_principaux') {
+                    exportData = badgesToExport.map(badge => ({
+                        'ID': badge.id,
+                        'Nom': badge.nom,
+                        'Prénom': badge.prenom,
+                        'Statut Présence': badge.presence,
+                        'Source': badge.source === 'local' ? 'Local' : 'Externe',
+                        'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'
+                    }));
+                } else {
+                    exportData = badgesToExport.map(badge => ({
+                        'ID': badge.id,
+                        'Nom': badge.nom,
+                        'Prénom': badge.prenom,
+                        'Statut': badge.valide ? 'Validé' : 'Non validé',
+                        'Source': badge.source === 'local' ? 'Local' : 'Externe',
+                        'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'
+                    }));
+                }
                 
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 
@@ -1279,16 +1353,13 @@
                     { wch: 20 }
                 ];
                 
-                XLSX.utils.book_append_sheet(wb, ws, 'Nouveaux Badges');
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
                 
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-                const fileName = `badges_nouveaux_${timestamp}.xlsx`;
+                const fileName = `${fileNamePrefix}_${timestamp}.xlsx`;
                 XLSX.writeFile(wb, fileName);
                 
-                const exportedIds = newBadges.map(b => b.id);
-                markBadgesAsExported(exportedIds);
-                
-                showMessage(`✓ ${newBadges.length} nouveau(x) badge(s) exporté(s) avec succès dans ${fileName}!`, 'success');
+                showMessage(`✓ ${badgesToExport.length} badge(s) exporté(s) avec succès dans ${fileName}!`, 'success');
             } catch (error) {
                 showMessage('Erreur d\'export: ' + error.message, 'error');
             }
