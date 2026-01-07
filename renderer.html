@@ -967,8 +967,8 @@ document.getElementById('filterValide')
                     }
                 } else if (currentSource === 'local') {
                     // For local: print, edit, delete buttons
-                    const statusClass = parseInt(badge.valide) === 1 ? 'badge-valid' : 'badge-invalid';
-                    const statusText = parseInt(badge.valide) === 1 ? '✓ Validé' : '✗ Non validé';
+                    const statusClass = 'badge-valid';
+                    const statusText = '✓ Validé';
                     statusCell = `<span class="badge ${statusClass}">${statusText}</span>`;
                     
                     actionButtons = `
@@ -978,14 +978,11 @@ document.getElementById('filterValide')
                         <button class="btn btn-sm btn-primary" onclick="editBadge(${badge.id})" title="Modifier">
                             ✏️
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteBadge(${badge.id})" title="Supprimer">
-                            🗑️
-                        </button>
                     `;
                 } else {
                     // For external: only print button
-                    const statusClass = parseInt(badge.valide) === 1 ? 'badge-valid' : 'badge-invalid';
-                    const statusText = parseInt(badge.valide) === 1 ? '✓ Validé' : '✗ Non validé';
+                    const statusClass = 'badge-valid' ;
+                    const statusText =  '✓ Validé';
                     statusCell = `<span class="badge ${statusClass}">${statusText}</span>`;
                     
                     actionButtons = `
