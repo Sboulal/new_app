@@ -1,48 +1,47 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Badges</title>
-    
-    <!-- SheetJS library for Excel parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+            overflow: visible;
+            position: relative;
         }
-
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             text-align: center;
+            border-radius: 20px 20px 0 0;
         }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        
+        /* STICKY CONTAINER FOR STATS AND CONTROLS */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
+        
+        /* STATS */
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -50,7 +49,6 @@
             padding: 30px;
             background: #f8f9fa;
         }
-
         .stat-card {
             background: white;
             padding: 20px;
@@ -59,44 +57,27 @@
             text-align: center;
             transition: transform 0.3s;
         }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .stat-card h3 {
-            color: #667eea;
-            font-size: 2em;
-            margin-bottom: 5px;
-        }
-
-        .stat-card p {
-            color: #666;
-            font-size: 0.9em;
-        }
-
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card h3 { color: #667eea; font-size: 2em; margin-bottom: 5px; }
+        .stat-card p { color: #666; font-size: 0.9em; }
+        
+        /* CONTROLS */
         .controls {
             padding: 30px;
             background: white;
             border-bottom: 2px solid #f0f0f0;
         }
-
-        .search-row {
-            margin-bottom: 20px;
-        }
-
-        .buttons-row {
+        .controls-row {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
             align-items: center;
         }
-
         .search-box {
             width: 100%;
             position: relative;
+            margin-bottom: 15px;
         }
-
         .search-box input {
             width: 100%;
             padding: 12px 40px 12px 15px;
@@ -105,12 +86,7 @@
             font-size: 1em;
             transition: border-color 0.3s;
         }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
+        .search-box input:focus { outline: none; border-color: #667eea; }
         .search-icon {
             position: absolute;
             right: 15px;
@@ -118,7 +94,6 @@
             transform: translateY(-50%);
             color: #999;
         }
-
         .btn {
             padding: 12px 24px;
             border: none;
@@ -128,78 +103,25 @@
             transition: all 0.3s;
             font-weight: 600;
         }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
+        .btn-primary { background: #667eea; color: white; }
         .btn-primary:hover {
             background: #5568d3;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
-
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .btn-mark-present {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-mark-present:hover {
-            background: #dc2626;
-        }
-
-        .btn-marked-present {
-            background: #10b981;
-            color: white;
-            cursor: default;
-        }
-
-        .btn-marked-present:hover {
-            background: #10b981;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #4b5563;
-        }
-
-        .btn-warning {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #d97706;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.85em;
-        }
-
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-mark-present { background: #ef4444; color: white; }
+        .btn-mark-present:hover { background: #dc2626; }
+        .btn-marked-present { background: #10b981; color: white; cursor: default; }
+        .btn-marked-present:hover { background: #10b981; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85em; }
         select {
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -208,24 +130,14 @@
             cursor: pointer;
             background: white;
         }
-
-        select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .table-container {
-            padding: 30px;
-            overflow-x: auto;
-        }
-
+        select:focus { outline: none; border-color: #667eea; }
+        .table-container { padding: 30px; overflow-x: auto; }
         .table-container .tabs {
             display: flex;
             gap: 30px;
             margin-bottom: 20px;
             border-bottom: 2px solid #e0e0e0;
         }
-
         .tab {
             padding: 12px 0;
             background: none;
@@ -237,15 +149,8 @@
             position: relative;
             transition: color 0.3s;
         }
-
-        .tab:hover {
-            color: #667eea;
-        }
-
-        .tab.active {
-            color: #667eea;
-        }
-
+        .tab:hover { color: #667eea; }
+        .tab.active { color: #667eea; }
         .tab.active::after {
             content: '';
             position: absolute;
@@ -256,7 +161,6 @@
             background: #667eea;
             border-radius: 3px 3px 0 0;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -265,12 +169,7 @@
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
-        thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
+        thead { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         th {
             padding: 15px;
             text-align: left;
@@ -279,20 +178,9 @@
             font-size: 0.85em;
             letter-spacing: 1px;
         }
-
-        td {
-            padding: 15px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        tbody tr {
-            transition: background 0.3s;
-        }
-
-        tbody tr:hover {
-            background: #f8f9fa;
-        }
-
+        td { padding: 15px; border-bottom: 1px solid #f0f0f0; }
+        tbody tr { transition: background 0.3s; }
+        tbody tr:hover { background: #f8f9fa; }
         .badge {
             padding: 6px 12px;
             border-radius: 20px;
@@ -300,27 +188,10 @@
             font-weight: 600;
             display: inline-block;
         }
-
-        .badge-valid {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-invalid {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .badge-local {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-external {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
+        .badge-valid { background: #d1fae5; color: #065f46; }
+        .badge-invalid { background: #fee2e2; color: #991b1b; }
+        .badge-local { background: #dbeafe; color: #1e40af; }
+        .badge-external { background: #fef3c7; color: #92400e; }
         .modal {
             display: none;
             position: fixed;
@@ -333,11 +204,7 @@
             justify-content: center;
             align-items: center;
         }
-
-        .modal.active {
-            display: flex;
-        }
-
+        .modal.active { display: flex; }
         .modal-content {
             background: white;
             padding: 30px;
@@ -346,18 +213,13 @@
             max-width: 500px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-
-        .modal-header h2 {
-            color: #667eea;
-        }
-
+        .modal-header h2 { color: #667eea; }
         .close-btn {
             background: none;
             border: none;
@@ -365,22 +227,14 @@
             cursor: pointer;
             color: #999;
         }
-
-        .close-btn:hover {
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
+        .close-btn:hover { color: #333; }
+        .form-group { margin-bottom: 20px; }
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #333;
         }
-
         .form-group input, .form-group select {
             width: 100%;
             padding: 12px;
@@ -388,40 +242,11 @@
             border-radius: 8px;
             font-size: 1em;
         }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #667eea;
-            font-size: 1.2em;
-        }
-
-        .error {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 30px;
-        }
-
-        .success {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 30px;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .loading { text-align: center; padding: 40px; color: #667eea; font-size: 1.2em; }
+        .error { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin: 20px 30px; }
+        .success { background: #d1fae5; color: #065f46; padding: 15px; border-radius: 8px; margin: 20px 30px; }
+        .action-buttons { display: flex; gap: 5px; }
         .spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #667eea;
@@ -432,50 +257,17 @@
             display: inline-block;
             margin-left: 10px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state svg {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        #excelFileInput {
-            display: none;
-        }
-
-        .import-summary {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .import-summary h4 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .import-summary ul {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .import-summary li {
-            padding: 5px 0;
-            color: #666;
-        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state svg { width: 100px; height: 100px; margin-bottom: 20px; opacity: 0.5; }
+        #excelFileInput { display: none; }
+        .import-summary { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px; }
+        .import-summary h4 { color: #667eea; margin-bottom: 10px; }
+        .import-summary ul { list-style: none; padding-left: 0; }
+        .import-summary li { padding: 5px 0; color: #666; }
     </style>
 </head>
 <body>
@@ -485,58 +277,61 @@
             <p>Système de gestion centralisé</p>
         </div>
 
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <h3 id="totalBadges">0</h3>
-                <p>Total Badges</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="presentBadges">0</h3>
-                <p>Badges Présents</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="absentBadges">0</h3>
-                <p>Badges Absents</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="totalPrints">0</h3>
-                <p>Impressions</p>
-            </div>
-        </div>
-
-        <div class="controls">
-            <div class="controls-row">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Rechercher par nom, prénom ou ID...">
-                    <span class="search-icon">🔍</span>
+        <!-- STICKY HEADER: Stats + Controls -->
+        <div class="sticky-header">
+            <div class="stats" id="stats">
+                <div class="stat-card">
+                    <h3 id="totalBadges">0</h3>
+                    <p>Total Badges</p>
                 </div>
-                
-                <select id="filterValide">
-                    <option value="">Tous les statuts</option>
-                    <option value="1">Validés</option>
-                    <option value="0">Non validés</option>
-                </select>
+                <div class="stat-card">
+                    <h3 id="presentBadges">0</h3>
+                    <p>Badges Présents</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="absentBadges">0</h3>
+                    <p>Badges Absents</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalPrints">0</h3>
+                    <p>Impressions</p>
+                </div>
+            </div>
 
-                <button class="btn btn-primary" onclick="openAddModal()">
-                    ➕ Nouveau Badge
-                </button>
+            <div class="controls">
+                <div class="controls-row">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Rechercher par nom, prénom ou ID...">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    
+                    <select id="filterValide">
+                        <option value="">Tous les statuts</option>
+                        <option value="1">Validés</option>
+                        <option value="0">Non validés</option>
+                    </select>
 
-                <button class="btn btn-success" onclick="syncExternal()">
-                    🔄 Synchroniser
-                </button>
+                    <button class="btn btn-primary" onclick="openAddModal()">
+                        ➕ Nouveau Badge
+                    </button>
 
-                <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
-                <button class="btn btn-warning" onclick="document.getElementById('excelFileInput').click()">
-                    📥 Importer Excel
-                </button>
+                    <button class="btn btn-success" onclick="syncExternal()">
+                        🔄 Synchroniser
+                    </button>
 
-                <button class="btn btn-secondary" onclick="exportExcel()">
-                    📤 Exporter Excel
-                </button>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
+                    <button class="btn btn-warning" onclick="document.getElementById('excelFileInput').click()">
+                        📥 Importer Excel
+                    </button>
 
-                <button class="btn btn-secondary" onclick="loadBadges()">
-                    ↻ Actualiser
-                </button>
+                    <button class="btn btn-secondary" onclick="exportExcel()">
+                        📤 Exporter Excel
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="loadBadges()">
+                        ↻ Actualiser
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1324,6 +1119,7 @@ document.getElementById('filterValide')
                         'ID': badge.id,
                         'Nom': badge.nom,
                         'Prénom': badge.prenom,
+                        'Email': badge,
                         'Statut Présence': badge.presence,
                         'Source': badge.source === 'local' ? 'Local' : 'Externe',
                         'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'
@@ -1333,6 +1129,7 @@ document.getElementById('filterValide')
                         'ID': badge.id,
                         'Nom': badge.nom,
                         'Prénom': badge.prenom,
+                        'Email': badge.email,
                         'Statut': badge.valide ? 'Validé' : 'Non validé',
                         'Source': badge.source === 'local' ? 'Local' : 'Externe',
                         'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'

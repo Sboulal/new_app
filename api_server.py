@@ -599,9 +599,10 @@ def get_all_badges():
                             search_lower = search.lower()
                             nom = str(badge.get('nom', '')).lower()
                             prenom = str(badge.get('prenom', '')).lower()
+                            email = str(badge.get('email', '')).lower()
                             badge_id = str(badge.get('id', ''))
                             
-                            if search_lower not in nom and search_lower not in prenom and search_lower not in badge_id:
+                            if search_lower not in nom and search_lower not in prenom and search_lower not in email and search_lower not in badge_id:
                                 continue
                         
                         badge['source'] = 'external'
@@ -635,7 +636,7 @@ def get_all_badges():
         
         # Combine results
         all_badges = local_badges + external_badges + external_badges_principaux
-        all_badges.sort(key=lambda x: x.get('id', 0))  # Ascending order (oldest first)
+        # all_badges.sort(key=lambda x: x.get('id', 0))  # Ascending order (oldest first)
         
         return jsonify(all_badges)
     
