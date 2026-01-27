@@ -60,40 +60,40 @@
         .stat-card:hover { transform: translateY(-5px); }
         .stat-card h3 { color: #667eea; font-size: 2em; margin-bottom: 5px; }
         .stat-card p { color: #666; font-size: 0.9em; }
-        
-        /* CONTROLS */
-        .controls {
-            padding: 30px;
-            background: white;
-            border-bottom: 2px solid #f0f0f0;
-        }
-        .controls-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-        .search-box {
-            width: 100%;
-            position: relative;
-            margin-bottom: 15px;
-        }
-        .search-box input {
-            width: 100%;
-            padding: 12px 40px 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
-        .search-box input:focus { outline: none; border-color: #667eea; }
-        .search-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
+
+/* CONTROLS */
+.controls {
+    padding: 30px;
+    background: white;
+    border-bottom: 2px solid #f0f0f0;
+}
+.controls-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 15px;
+    align-items: center;
+}
+.search-box {
+    flex: 0 0 300px; /* Largeur fixe de 300px pour la barre de recherche */
+    position: relative;
+    margin-bottom: 0;
+}
+.search-box input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+.search-box input:focus { outline: none; border-color: #667eea; }
+.search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
         .btn {
             padding: 12px 24px;
             border: none;
@@ -298,41 +298,28 @@
                 </div>
             </div>
 
-            <div class="controls">
-                <div class="controls-row">
-                    <div class="search-box">
-                        <input type="text" id="searchInput" placeholder="Rechercher par nom, prénom ou ID...">
-                        <span class="search-icon">🔍</span>
-                    </div>
-                    
-                    <!-- <select id="filterValide">
-                        <option value="">Tous les statuts</option>
-                        <option value="1">Validés</option>
-                        <option value="0">Non validés</option>
-                    </select> -->
+          <div class="controls">
+    <div class="controls-row">
+        <div class="search-box" style="flex: 1; margin-bottom: 0;">
+            <input type="text" id="searchInput" placeholder="Rechercher par nom, prénom ou ID...">
+            <span class="search-icon">🔍</span>
+        </div>
+        
+        <button class="btn btn-primary" onclick="openAddModal()">
+            ➕ Nouveau Badge
+        </button>
 
-                    <button class="btn btn-primary" onclick="openAddModal()">
-                        ➕ Nouveau Badge
-                    </button>
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
 
-                    <!-- <button class="btn btn-success" onclick="syncExternal()">
-                        🔄 Synchroniser
-                    </button> -->
+        <button class="btn btn-secondary" onclick="exportExcel()">
+            📤 Exporter Excel
+        </button>
 
-                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
-                    <!-- <button class="btn btn-warning" onclick="document.getElementById('excelFileInput').click()">
-                        📥 Importer Excel
-                    </button> -->
-
-                    <button class="btn btn-secondary" onclick="exportExcel()">
-                        📤 Exporter Excel
-                    </button>
-
-                    <button class="btn btn-secondary" onclick="loadBadges()">
-                        ↻ Actualiser
-                    </button>
-                </div>
-            </div>
+        <button class="btn btn-secondary" onclick="loadBadges()">
+            ↻ Actualiser
+        </button>
+    </div>
+</div>
         </div>
 
         <div id="messageContainer"></div>
@@ -879,37 +866,44 @@
             currentBadgeId = null;
         }
 
-        function saveBadge(event) {
-            event.preventDefault();
+     function saveBadge(event) {
+    event.preventDefault();
 
-            const badges = getLocalBadges();
-            const data = {
-                nom: document.getElementById('nom').value,
-                prenom: document.getElementById('prenom').value,
-                // valide: parseInt(document.getElementById('valide').value),
-                source: 'local',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
+    const badges = getLocalBadges();
+    const data = {
+        nom: document.getElementById('nom').value,
+        prenom: document.getElementById('prenom').value,
+        source: 'local',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
 
-            if (currentBadgeId) {
-                const index = badges.findIndex(b => b.id === currentBadgeId);
-                if (index !== -1) {
-                    badges[index] = { ...badges[index], ...data };
-                }
-            } else {
-                data.id = getNextLocalId();
-                badges.push(data);
-            }
+    let badgeId;
 
-            saveLocalBadges(badges);
-            showMessage('Badge enregistré avec succès!', 'success');
-            closeModal();
-            loadBadges();
-            loadStats();
-            updateTabCounters();
+    if (currentBadgeId) {
+        const index = badges.findIndex(b => b.id === currentBadgeId);
+        if (index !== -1) {
+            badges[index] = { ...badges[index], ...data };
+            badgeId = currentBadgeId;
         }
+    } else {
+        badgeId = getNextLocalId();
+        data.id = badgeId;
+        badges.push(data);
+    }
 
+    saveLocalBadges(badges);
+    showMessage('Badge enregistré avec succès!', 'success');
+    closeModal();
+    loadBadges();
+    loadStats();
+    updateTabCounters();
+
+    // Automatically print the badge after saving
+    setTimeout(() => {
+        printBadge(badgeId);
+    }, 500); // Small delay to ensure UI updates
+}
         async function printBadge(id) {
             const printBtn = document.getElementById(`print-btn-${id}`);
             
