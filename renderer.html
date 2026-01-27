@@ -305,24 +305,24 @@
                         <span class="search-icon">🔍</span>
                     </div>
                     
-                    <select id="filterValide">
+                    <!-- <select id="filterValide">
                         <option value="">Tous les statuts</option>
                         <option value="1">Validés</option>
                         <option value="0">Non validés</option>
-                    </select>
+                    </select> -->
 
                     <button class="btn btn-primary" onclick="openAddModal()">
                         ➕ Nouveau Badge
                     </button>
 
-                    <button class="btn btn-success" onclick="syncExternal()">
+                    <!-- <button class="btn btn-success" onclick="syncExternal()">
                         🔄 Synchroniser
-                    </button>
+                    </button> -->
 
                     <input type="file" id="excelFileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
-                    <button class="btn btn-warning" onclick="document.getElementById('excelFileInput').click()">
+                    <!-- <button class="btn btn-warning" onclick="document.getElementById('excelFileInput').click()">
                         📥 Importer Excel
-                    </button>
+                    </button> -->
 
                     <button class="btn btn-secondary" onclick="exportExcel()">
                         📤 Exporter Excel
@@ -387,16 +387,16 @@
                     <label for="prenom">Prénom *</label>
                     <input type="text" id="prenom" required>
                 </div>
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label for="valide">Statut</label>
                     <select id="valide">
                         <option value="0">Non validé</option>
                         <option value="1">Validé</option>
                     </select>
-                </div>
+                </div> -->
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="submit" class="btn btn-primary">Save-Print</button>
                 </div>
             </form>
         </div>
@@ -473,8 +473,7 @@
             document.getElementById('searchInput')
   .addEventListener('input', debounce(applySearchFilter, 300));
 
-document.getElementById('filterValide')
-  .addEventListener('change', applySearchFilter);
+// document.getElementById('filterValide').addEventListener('change', applySearchFilter);
 
         });
 
@@ -537,7 +536,7 @@ document.getElementById('filterValide')
 
         async function loadBadges() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const valide = document.getElementById('filterValide').value;
+            // const valide = document.getElementById('filterValide').value;
 
             showLoading(true);
             hideMessage();
@@ -556,13 +555,13 @@ document.getElementById('filterValide')
                         );
                     }
                     
-                    if (valide !== '') {
-                        badges = badges.filter(b => b.valide === parseInt(valide));
-                    }
+                    // if (valide !== '') {
+                    //     badges = badges.filter(b => b.valide === parseInt(valide));
+                    // }
                 } else if (currentSource === 'external') {
                     let url = `${API_URL}/api/getbadges?source=external`;
                     if (search) url += `&search=${encodeURIComponent(search)}`;
-                    if (valide !== '') url += `&valide=${valide}`;
+                    // if (valide !== '') url += `&valide=${valide}`;
 
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Erreur lors du chargement des badges externes');
@@ -572,7 +571,7 @@ document.getElementById('filterValide')
                 } else {
                     let url = `${API_URL}/api/getbadges?source=external_principaux`;
                     if (search) url += `&search=${encodeURIComponent(search)}`;
-                    if (valide !== '') url += `&valide=${valide}`;
+                    // if (valide !== '') url += `&valide=${valide}`;
 
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Erreur lors du chargement des badges externes principaux');
@@ -598,7 +597,7 @@ document.getElementById('filterValide')
         .toLowerCase()
         .trim();
 
-    const valide = document.getElementById('filterValide').value;
+    // const valide = document.getElementById('filterValide').value;
 
     let filtered = [...allBadgesCache];
 
@@ -610,9 +609,9 @@ document.getElementById('filterValide')
         );
     }
 
-    if (valide !== '') {
-        filtered = filtered.filter(b => parseInt(b.valide) === parseInt(valide));
-    }
+    // if (valide !== '') {
+    //     filtered = filtered.filter(b => parseInt(b.valide) === parseInt(valide));
+    // }
 
     displayBadges(filtered);
 }
@@ -625,7 +624,7 @@ document.getElementById('filterValide')
             let externalPRCount = 0;
             
             // Compter les badges validés locaux
-            const validatedLocal = localBadges.filter(b => parseInt(b.valide) === 1).length;
+            // const validatedLocal = localBadges.filter(b => parseInt(b.valide) === 1).length;
 
             // Charger les statistiques externes QR Code
             fetch(`${API_URL}/api/getbadges?source=external`)
@@ -699,8 +698,7 @@ document.getElementById('filterValide')
                         <th>ID</th>
                         <th>Nom</th>
                         <th>Prénom</th>
-                        <th>Statut Présence</th>
-                        <th>Source</th>
+                        
                         <th>Date de création</th>
                         <th>Actions</th>
                     </tr>
@@ -711,8 +709,8 @@ document.getElementById('filterValide')
                         <th>ID</th>
                         <th>Nom</th>
                         <th>Prénom</th>
-                        <th>Statut</th>
-                        <th>Source</th>
+                       
+                    
                         <th>Date de création</th>
                         <th>Actions</th>
                     </tr>
@@ -722,8 +720,8 @@ document.getElementById('filterValide')
             badges.forEach(badge => {
                 const row = document.createElement('tr');
                 
-                const sourceClass = badge.source === 'local' ? 'badge-local' : 'badge-external';
-                const sourceText = badge.source === 'local' ? '💾 Local' : '🌐 Externe';
+                // const sourceClass = badge.source === 'local' ? 'badge-local' : 'badge-external';
+                // const sourceText = badge.source === 'local' ? '💾 Local' : '🌐 Externe';
 
                 const date = badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR', {
                     year: 'numeric',
@@ -743,28 +741,28 @@ document.getElementById('filterValide')
                     const presentBadges = getPresentBadges();
                     const isPresent = presentBadges.includes(badge.id);
                     
-                    if (isPresent) {
-                        // Badge présent (VERT)
-                        statusCell = '<span class="badge badge-valid">✓ Présent</span>';
-                        actionButtons = `
-                            <button class="btn btn-sm btn-marked-present" disabled title="Déjà présent">
-                                ✓ Présent
-                            </button>
-                        `;
-                    } else {
+                    // if (isPresent) {
+                    //     // Badge présent (VERT)
+                    //     statusCell = '<span class="badge badge-valid">✓ Présent</span>';
+                    //     actionButtons = `
+                    //         <button class="btn btn-sm btn-marked-present" disabled title="Déjà présent">
+                    //             ✓ Présent
+                    //         </button>
+                    //     `;
+                    // } else {
                         // Badge absent (ROUGE)
-                        statusCell = '<span class="badge badge-invalid">✗ Absent</span>';
+                        // statusCell = '<span class="badge badge-invalid">✗ Absent</span>';
                         actionButtons = `
                             <button class="btn btn-sm btn-mark-present" onclick="markAsPresent(${badge.id})" title="Marquer comme présent">
                                 ✓ Marquer comme présent
                             </button>
                         `;
-                    }
+                    // }
                 } else if (currentSource === 'local') {
                     // For local: print, edit, delete buttons
                     const statusClass = 'badge-valid';
                     const statusText = '✓ Validé';
-                    statusCell = `<span class="badge ${statusClass}">${statusText}</span>`;
+                    // statusCell = `<span class="badge ${statusClass}">${statusText}</span>`;
                     
                     actionButtons = `
                         <button class="btn btn-sm btn-secondary" id="print-btn-${badge.id}" onclick="printBadge(${badge.id})" title="Imprimer">
@@ -792,8 +790,8 @@ document.getElementById('filterValide')
                     <td><strong>#${badge.id}</strong></td>
                     <td>${badge.nom}</td>
                     <td>${badge.prenom}</td>
-                    <td>${statusCell}</td>
-                    <td><span class="badge ${sourceClass}">${sourceText}</span></td>
+                   
+                    
                     <td>${date}</td>
                     <td>
                         <div class="action-buttons">
@@ -828,7 +826,7 @@ document.getElementById('filterValide')
                 // Mettre à jour la colonne statut dans la ligne du tableau
                 const row = button.closest('tr');
                 const statusCell = row.querySelector('td:nth-child(4)');
-                statusCell.innerHTML = '<span class="badge badge-valid">✓ Présent</span>';
+                // statusCell.innerHTML = '<span class="badge badge-valid">✓ Présent</span>';
                 
                 showMessage(`✓ Badge #${id} marqué comme présent!`, 'success');
                 loadStats();
@@ -850,7 +848,7 @@ document.getElementById('filterValide')
             document.getElementById('modalTitle').textContent = 'Modifier Badge';
             document.getElementById('nom').value = badge.nom;
             document.getElementById('prenom').value = badge.prenom;
-            document.getElementById('valide').value = badge.valide;
+            // document.getElementById('valide').value = badge.valide;
             document.getElementById('badgeModal').classList.add('active');
         }
 
@@ -872,7 +870,7 @@ document.getElementById('filterValide')
             document.getElementById('modalTitle').textContent = 'Nouveau Badge';
             document.getElementById('nom').value = '';
             document.getElementById('prenom').value = '';
-            document.getElementById('valide').value = '0';
+            // document.getElementById('valide').value = '0';
             document.getElementById('badgeModal').classList.add('active');
         }
 
@@ -888,7 +886,7 @@ document.getElementById('filterValide')
             const data = {
                 nom: document.getElementById('nom').value,
                 prenom: document.getElementById('prenom').value,
-                valide: parseInt(document.getElementById('valide').value),
+                // valide: parseInt(document.getElementById('valide').value),
                 source: 'local',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
