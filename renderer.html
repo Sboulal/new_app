@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -74,7 +73,7 @@
     align-items: center;
 }
 .search-box {
-    flex: 0 0 300px; /* Largeur fixe de 300px pour la barre de recherche */
+    flex: 0 0 300px;
     position: relative;
     margin-bottom: 0;
 }
@@ -374,13 +373,6 @@
                     <label for="prenom">Prénom *</label>
                     <input type="text" id="prenom" required>
                 </div>
-                <!-- <div class="form-group">
-                    <label for="valide">Statut</label>
-                    <select id="valide">
-                        <option value="0">Non validé</option>
-                        <option value="1">Validé</option>
-                    </select>
-                </div> -->
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
                     <button type="submit" class="btn btn-primary">Save-Print</button>
@@ -444,10 +436,28 @@
             return allBadges.filter(badge => !exportedIds.includes(badge.id));
         }
 
-        // Get present badges
+        // Get present badges - FIXED to use object structure
         function getPresentBadges() {
             const data = localStorage.getItem(PRESENT_BADGES_KEY);
-            return data ? JSON.parse(data) : [];
+            if (!data) return {};
+            try {
+                const parsed = JSON.parse(data);
+                // Convert old array format to object if needed
+                if (Array.isArray(parsed)) {
+                    const obj = {};
+                    parsed.forEach(id => obj[id] = true);
+                    localStorage.setItem(PRESENT_BADGES_KEY, JSON.stringify(obj));
+                    return obj;
+                }
+                return parsed;
+            } catch (e) {
+                return {};
+            }
+        }
+
+        // Save present badges
+        function savePresentBadges(presentBadges) {
+            localStorage.setItem(PRESENT_BADGES_KEY, JSON.stringify(presentBadges));
         }
 
         // Load badges on page load
@@ -458,10 +468,7 @@
 
             // Search functionality
             document.getElementById('searchInput')
-  .addEventListener('input', debounce(applySearchFilter, 300));
-
-// document.getElementById('filterValide').addEventListener('change', applySearchFilter);
-
+                .addEventListener('input', debounce(applySearchFilter, 300));
         });
 
         function switchTab(source) {
@@ -523,7 +530,6 @@
 
         async function loadBadges() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            // const valide = document.getElementById('filterValide').value;
 
             showLoading(true);
             hideMessage();
@@ -534,6 +540,9 @@
                 if (currentSource === 'local') {
                     badges = getLocalBadges();
                     
+                    // Reverse order to show newest first
+                    badges.reverse();
+                    
                     if (search) {
                         badges = badges.filter(b => 
                             b.nom.toLowerCase().includes(search) ||
@@ -541,14 +550,9 @@
                             b.id.toString().includes(search)
                         );
                     }
-                    
-                    // if (valide !== '') {
-                    //     badges = badges.filter(b => b.valide === parseInt(valide));
-                    // }
                 } else if (currentSource === 'external') {
                     let url = `${API_URL}/api/getbadges?source=external`;
                     if (search) url += `&search=${encodeURIComponent(search)}`;
-                    // if (valide !== '') url += `&valide=${valide}`;
 
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Erreur lors du chargement des badges externes');
@@ -558,7 +562,6 @@
                 } else {
                     let url = `${API_URL}/api/getbadges?source=external_principaux`;
                     if (search) url += `&search=${encodeURIComponent(search)}`;
-                    // if (valide !== '') url += `&valide=${valide}`;
 
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Erreur lors du chargement des badges externes principaux');
@@ -577,41 +580,34 @@
                 showLoading(false);
             }
         }
+
         function applySearchFilter() {
-    const search = document
-        .getElementById('searchInput')
-        .value
-        .toLowerCase()
-        .trim();
+            const search = document
+                .getElementById('searchInput')
+                .value
+                .toLowerCase()
+                .trim();
 
-    // const valide = document.getElementById('filterValide').value;
+            let filtered = [...allBadgesCache];
 
-    let filtered = [...allBadgesCache];
+            if (search) {
+                filtered = filtered.filter(b =>
+                    b.nom.toLowerCase().includes(search) ||
+                    b.prenom.toLowerCase().includes(search) ||
+                    `${b.nom} ${b.prenom}`.toLowerCase().includes(search)
+                );
+            }
 
-    if (search) {
-        filtered = filtered.filter(b =>
-            b.nom.toLowerCase().includes(search) ||
-            b.prenom.toLowerCase().includes(search) ||
-            `${b.nom} ${b.prenom}`.toLowerCase().includes(search)
-        );
-    }
+            displayBadges(filtered);
+        }
 
-    // if (valide !== '') {
-    //     filtered = filtered.filter(b => parseInt(b.valide) === parseInt(valide));
-    // }
-
-    displayBadges(filtered);
-}
-
+        // FIXED: loadStats function to correctly calculate present/absent badges
         function loadStats() {
             const localBadges = getLocalBadges();
             const printCount = getPrintCounter();
             const localCount = localBadges.length;
             let externalCount = 0;
             let externalPRCount = 0;
-            
-            // Compter les badges validés locaux
-            // const validatedLocal = localBadges.filter(b => parseInt(b.valide) === 1).length;
 
             // Charger les statistiques externes QR Code
             fetch(`${API_URL}/api/getbadges?source=external`)
@@ -626,11 +622,11 @@
                 .then(externalPrincipauxBadges => {
                     externalPRCount = externalPrincipauxBadges.length || 0;
                     
-                    // Calculer les badges présents (marqués comme présents dans external_principaux)
-                    const presentBadges = getPresentBadges();
-                    const presentCount = presentBadges.length;
+                    // FIXED: Get present badges as object and count keys
+                    const presentBadgesObj = getPresentBadges();
+                    const presentCount = Object.keys(presentBadgesObj).length;
                     
-                    // Calculer les badges absents (total external_principaux - présents)
+                    // FIXED: Calculate absent badges correctly
                     const absentCount = externalPRCount - presentCount;
                     
                     // Mettre à jour tous les compteurs
@@ -685,7 +681,6 @@
                         <th>ID</th>
                         <th>Nom</th>
                         <th>Prénom</th>
-                        
                         <th>Date de création</th>
                         <th>Actions</th>
                     </tr>
@@ -696,19 +691,17 @@
                         <th>ID</th>
                         <th>Nom</th>
                         <th>Prénom</th>
-                       
-                    
                         <th>Date de création</th>
                         <th>Actions</th>
                     </tr>
                 `;
             }
 
+            // FIXED: Get present badges as object
+            const presentBadgesObj = getPresentBadges();
+
             badges.forEach(badge => {
                 const row = document.createElement('tr');
-                
-                // const sourceClass = badge.source === 'local' ? 'badge-local' : 'badge-external';
-                // const sourceText = badge.source === 'local' ? '💾 Local' : '🌐 Externe';
 
                 const date = badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR', {
                     year: 'numeric',
@@ -721,36 +714,27 @@
 
                 // Different buttons based on source
                 let actionButtons = '';
-                let statusCell = '';
                 
                 if (currentSource === 'external_principaux') {
-                    // Vérifier si le badge est déjà marqué comme présent
-                    const presentBadges = getPresentBadges();
-                    const isPresent = presentBadges.includes(badge.id);
+                    // FIXED: Check if badge is present using object
+                    const isPresent = presentBadgesObj[badge.id] === true;
                     
-                    // if (isPresent) {
-                    //     // Badge présent (VERT)
-                    //     statusCell = '<span class="badge badge-valid">✓ Présent</span>';
-                    //     actionButtons = `
-                    //         <button class="btn btn-sm btn-marked-present" disabled title="Déjà présent">
-                    //             ✓ Présent
-                    //         </button>
-                    //     `;
-                    // } else {
+                    if (isPresent) {
+                        // Badge présent (VERT)
+                        actionButtons = `
+                            <button class="btn btn-sm btn-marked-present" disabled title="Déjà présent">
+                                ✓ Présent
+                            </button>
+                        `;
+                    } else {
                         // Badge absent (ROUGE)
-                        // statusCell = '<span class="badge badge-invalid">✗ Absent</span>';
                         actionButtons = `
                             <button class="btn btn-sm btn-mark-present" onclick="markAsPresent(${badge.id})" title="Marquer comme présent">
                                 ✓ Marquer comme présent
                             </button>
                         `;
-                    // }
+                    }
                 } else if (currentSource === 'local') {
-                    // For local: print, edit, delete buttons
-                    const statusClass = 'badge-valid';
-                    const statusText = '✓ Validé';
-                    // statusCell = `<span class="badge ${statusClass}">${statusText}</span>`;
-                    
                     actionButtons = `
                         <button class="btn btn-sm btn-secondary" id="print-btn-${badge.id}" onclick="printBadge(${badge.id})" title="Imprimer">
                             🖨️
@@ -760,11 +744,6 @@
                         </button>
                     `;
                 } else {
-                    // For external: only print button
-                    const statusClass = 'badge-valid' ;
-                    const statusText =  '✓ Validé';
-                    statusCell = `<span class="badge ${statusClass}">${statusText}</span>`;
-                    
                     actionButtons = `
                         <button class="btn btn-sm btn-secondary" id="print-btn-${badge.id}" onclick="printBadge(${badge.id})" title="Imprimer">
                             🖨️
@@ -777,8 +756,6 @@
                     <td><strong>#${badge.id}</strong></td>
                     <td>${badge.nom}</td>
                     <td>${badge.prenom}</td>
-                   
-                    
                     <td>${date}</td>
                     <td>
                         <div class="action-buttons">
@@ -791,29 +768,25 @@
             });
         }
 
+        // FIXED: markAsPresent function to persist state correctly
         function markAsPresent(id) {
             const button = event.target;
             
             try {
-                // Récupérer les badges marqués comme présents du localStorage
+                // Get present badges object
                 const presentBadges = getPresentBadges();
                 
-                // Ajouter cet ID à la liste
-                if (!presentBadges.includes(id)) {
-                    presentBadges.push(id);
-                    localStorage.setItem(PRESENT_BADGES_KEY, JSON.stringify(presentBadges));
-                }
+                // Add this ID to the object
+                presentBadges[id] = true;
                 
-                // Changer le bouton en badge "Présent" VERT
+                // Save to localStorage
+                savePresentBadges(presentBadges);
+                
+                // Update button appearance
                 button.className = 'btn btn-sm btn-marked-present';
                 button.innerHTML = '✓ Présent';
                 button.disabled = true;
                 button.onclick = null;
-                
-                // Mettre à jour la colonne statut dans la ligne du tableau
-                const row = button.closest('tr');
-                const statusCell = row.querySelector('td:nth-child(4)');
-                // statusCell.innerHTML = '<span class="badge badge-valid">✓ Présent</span>';
                 
                 showMessage(`✓ Badge #${id} marqué comme présent!`, 'success');
                 loadStats();
@@ -835,7 +808,6 @@
             document.getElementById('modalTitle').textContent = 'Modifier Badge';
             document.getElementById('nom').value = badge.nom;
             document.getElementById('prenom').value = badge.prenom;
-            // document.getElementById('valide').value = badge.valide;
             document.getElementById('badgeModal').classList.add('active');
         }
 
@@ -857,7 +829,6 @@
             document.getElementById('modalTitle').textContent = 'Nouveau Badge';
             document.getElementById('nom').value = '';
             document.getElementById('prenom').value = '';
-            // document.getElementById('valide').value = '0';
             document.getElementById('badgeModal').classList.add('active');
         }
 
@@ -866,44 +837,45 @@
             currentBadgeId = null;
         }
 
-     function saveBadge(event) {
-    event.preventDefault();
+        function saveBadge(event) {
+            event.preventDefault();
 
-    const badges = getLocalBadges();
-    const data = {
-        nom: document.getElementById('nom').value,
-        prenom: document.getElementById('prenom').value,
-        source: 'local',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    };
+            const badges = getLocalBadges();
+            const data = {
+                nom: document.getElementById('nom').value,
+                prenom: document.getElementById('prenom').value,
+                source: 'local',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
 
-    let badgeId;
+            let badgeId;
 
-    if (currentBadgeId) {
-        const index = badges.findIndex(b => b.id === currentBadgeId);
-        if (index !== -1) {
-            badges[index] = { ...badges[index], ...data };
-            badgeId = currentBadgeId;
+            if (currentBadgeId) {
+                const index = badges.findIndex(b => b.id === currentBadgeId);
+                if (index !== -1) {
+                    badges[index] = { ...badges[index], ...data };
+                    badgeId = currentBadgeId;
+                }
+            } else {
+                badgeId = getNextLocalId();
+                data.id = badgeId;
+                badges.push(data);
+            }
+
+            saveLocalBadges(badges);
+            showMessage('Badge enregistré avec succès!', 'success');
+            closeModal();
+            loadBadges();
+            loadStats();
+            updateTabCounters();
+
+            // Automatically print the badge after saving
+            setTimeout(() => {
+                printBadge(badgeId);
+            }, 500);
         }
-    } else {
-        badgeId = getNextLocalId();
-        data.id = badgeId;
-        badges.push(data);
-    }
 
-    saveLocalBadges(badges);
-    showMessage('Badge enregistré avec succès!', 'success');
-    closeModal();
-    loadBadges();
-    loadStats();
-    updateTabCounters();
-
-    // Automatically print the badge after saving
-    setTimeout(() => {
-        printBadge(badgeId);
-    }, 500); // Small delay to ensure UI updates
-}
         async function printBadge(id) {
             const printBtn = document.getElementById(`print-btn-${id}`);
             
@@ -1063,6 +1035,7 @@
             }
         }
 
+        // FIXED: exportExcel function to only export present badges for external_principaux
         async function exportExcel() {
             try {
                 let badgesToExport = [];
@@ -1083,20 +1056,27 @@
                 } else if (currentSource === 'external_principaux') {
                     const response = await fetch(`${API_URL}/api/getbadges?source=external_principaux`);
                     if (!response.ok) throw new Error('Impossible de récupérer les badges externes principaux');
-                    badgesToExport = await response.json();
-                    sheetName = 'Badges Externes Principaux';
-                    fileNamePrefix = 'badges_externes_principaux';
+                    const allBadges = await response.json();
                     
-                    // Add presence status for external_principaux
-                    const presentBadges = getPresentBadges();
+                    // FIXED: Only export present badges
+                    const presentBadgesObj = getPresentBadges();
+                    badgesToExport = allBadges.filter(badge => presentBadgesObj[badge.id] === true);
+                    
+                    sheetName = 'Badges Présents';
+                    fileNamePrefix = 'badges_presents';
+                    
+                    // Add presence status
                     badgesToExport = badgesToExport.map(badge => ({
                         ...badge,
-                        presence: presentBadges.includes(badge.id) ? 'Présent' : 'Absent'
+                        presence: 'Présent'
                     }));
                 }
                 
                 if (badgesToExport.length === 0) {
-                    showMessage('⚠️ Aucun badge à exporter dans cet onglet.', 'error');
+                    const message = currentSource === 'external_principaux' 
+                        ? '⚠️ Aucun badge présent à exporter. Marquez d\'abord des badges comme présents.' 
+                        : '⚠️ Aucun badge à exporter dans cet onglet.';
+                    showMessage(message, 'error');
                     return;
                 }
 
@@ -1111,9 +1091,7 @@
                         'ID': badge.id,
                         'Nom': badge.nom,
                         'Prénom': badge.prenom,
-                        'Email': badge,
                         'Statut Présence': badge.presence,
-                        'Source': badge.source === 'local' ? 'Local' : 'Externe',
                         'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'
                     }));
                 } else {
@@ -1121,9 +1099,6 @@
                         'ID': badge.id,
                         'Nom': badge.nom,
                         'Prénom': badge.prenom,
-                        'Email': badge.email,
-                        'Statut': badge.valide ? 'Validé' : 'Non validé',
-                        'Source': badge.source === 'local' ? 'Local' : 'Externe',
                         'Date de création': badge.created_at ? new Date(badge.created_at).toLocaleString('fr-FR') : '-'
                     }));
                 }
@@ -1135,7 +1110,6 @@
                     { wch: 20 },
                     { wch: 20 },
                     { wch: 15 },
-                    { wch: 12 },
                     { wch: 20 }
                 ];
                 
